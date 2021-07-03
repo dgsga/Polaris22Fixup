@@ -1,4 +1,4 @@
-Polaris22 Driver Fixup
+Polaris22Fixup
 ======================
 This KEXT fixes known graphics issues with Polaris22/VegaM on macOS. Only tested/supported on 10.14+.
 
