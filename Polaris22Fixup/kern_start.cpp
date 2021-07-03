@@ -92,8 +92,6 @@ static int patched_getHardwareInfo(void *obj, uint16_t *hwInfo) {
 #pragma mark - Patches on start/stop
 
 static void pluginStart() {
-    LiluAPI::Error error;
-    
     DBGLOG(MODULE_SHORT, "start");
     lilu.onPatcherLoadForce([](void *user, KernelPatcher &patcher) {
         KernelPatcher::RouteRequest csRoute =
@@ -103,34 +101,27 @@ static void pluginStart() {
         if (!patcher.routeMultipleLong(KernelPatcher::KernelID, &csRoute, 1))
             SYSLOG(MODULE_SHORT, "failed to route cs validation pages");
     });
-
-    error = lilu.onKextLoad(kAMDHWLibsInfo, arrsize(kAMDHWLibsInfo), [](void *user, KernelPatcher &patcher, size_t index, mach_vm_address_t address, size_t size){
-        DBGLOG(MODULE_SHORT, "processing AMDRadeonX4000HWLibs");
+    
+    DBGLOG(MODULE_SHORT, "processing AMDRadeonX4000HWLibs");
+    lilu.onKextLoad(kAMDHWLibsInfo, arrsize(kAMDHWLibsInfo), [](void *user, KernelPatcher &patcher, size_t index, mach_vm_address_t address, size_t size){
         for (size_t i = 0; i < arrsize(kAMDHWLibsInfo); i++) {
             if (i == kAmdRadeonX4000 && kAMDHWLibsInfo[i].loadIndex == index) {
                 KernelPatcher::RouteRequest amd_requests[] {
                     KernelPatcher::RouteRequest("__ZN29AMDRadeonX4000_AMDAccelDevice15getHardwareInfoEP24_sAMD_GET_HW_INFO_VALUES", patched_getHardwareInfo, orig_getHardwareInfo),
                 };
-                if (patcher.routeMultiple(index, amd_requests, address, size, true, true)) {
-                    DBGLOG(MODULE_SHORT, "patched getHardwareInfo");
-                } else {
-                    SYSLOG(MODULE_SHORT, "failed to patch getHardwareInfo: %d", patcher.getError());
+                if (!patcher.routeMultiple(index, amd_requests, address, size, true, true)) {
+                    SYSLOG(MODULE_SHORT, "failed to patch getHardwareInfo");
                 }
             } else if (i == kAmdRadeonX4000HwLibs && kAMDHWLibsInfo[i].loadIndex == index) {
                 KernelPatcher::RouteRequest amd_requests[] {
                     KernelPatcher::RouteRequest("_PECI_IsEarlySAMUInitEnabled", patched_IsEarlySAMUInitEnabled, orig_IsEarlySAMUInitEnabled),
                 };
-                if (patcher.routeMultiple(index, amd_requests, address, size, true, true)) {
-                    DBGLOG(MODULE_SHORT, "patched PECI_IsEarlySAMUInitEnabled");
-                } else {
-                    SYSLOG(MODULE_SHORT, "failed to patch PECI_IsEarlySAMUInitEnabled: %d", patcher.getError());
+                if (!patcher.routeMultiple(index, amd_requests, address, size, true, true)) {
+                    SYSLOG(MODULE_SHORT, "failed to patch PECI_IsEarlySAMUInitEnabled");
                 }
             }
         }
     });
-    if (error != LiluAPI::Error::NoError) {
-        SYSLOG(MODULE_SHORT, "failed to register onKextLoad method: %d", error);
-    }
 }
 
 // Boot args.
