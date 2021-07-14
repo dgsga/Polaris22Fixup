@@ -59,7 +59,7 @@ static boolean_t patched_cs_validate_range(vnode_t vp, memory_object_t pager, me
     int pathlen = PATH_MAX;
     boolean_t res = FunctionCast(patched_cs_validate_range, orig_cs_validate)(vp, pager, offset, data, size, result);
     if (res && vn_getpath(vp, path, &pathlen) == 0 && UserPatcher::matchSharedCachePath(path)) {
-        searchAndPatch(data, PAGE_SIZE, path, kAmdBronzeMtlAddrLibGetBaseArrayModeReturnOriginal, kAmdBronzeMtlAddrLibGetBaseArrayModeReturnPatched);
+        searchAndPatch(data, size, path, kAmdBronzeMtlAddrLibGetBaseArrayModeReturnOriginal, kAmdBronzeMtlAddrLibGetBaseArrayModeReturnPatched);
     }
     return res;
 }
